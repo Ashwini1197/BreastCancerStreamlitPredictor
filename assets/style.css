@@ -1,0 +1,51 @@
+.css-j5r0tf {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #7E99AB;
+}
+
+.diagnosis {
+  color: #0e0d0d;
+  padding: 0.2em 0.5em;
+  border-radius: 0.5em;
+}
+
+.diagnosis.benign {
+  background-color: #01DB4B
+}
+
+.diagnosis.malicious {
+  background-color: #ff4b4b
+}
+.probability-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.probability-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #9ed1f5;
+  padding: 40px;
+  border-radius: 10px;
+}
+
+.probability-label {
+  font-size: 20px;
+  color: #0e0d0d;
+}
+
+.probability-value {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.probability-value.benign {
+  color: green;
+}
+
+.probability-value.malicious {
+  color: red;
+}
