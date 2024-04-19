@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import plotly.express as px
+import openai
+import os
 
 def get_clean_data():
     data = pd.read_csv("data/data.csv")
@@ -140,6 +142,23 @@ def get_violin_plot(data):
     )
     return fig
 
+def summarize_text(text, max_tokens=300):
+    openai.api_key = os.environ.get("OPENAI_API_KEY")
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": f"Summarize the following text in {max_tokens} tokens:"},
+            {"role": "user", "content": text}
+        ],
+        max_tokens=max_tokens,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+
+    summary = response.choices[0].message.content.strip()
+    return summary
+
 def add_predictions(input_data):
     model = pickle.load(open("model/model.pkl", "rb"))
     scaler = pickle.load(open("model/scaler.pkl", "rb"))
@@ -147,42 +166,8 @@ def add_predictions(input_data):
     input_array_scaled = scaler.transform(input_array)
     prediction = model.predict(input_array_scaled)
     probabilities = model.predict_proba(input_array_scaled)[0]
-
-    st.subheader("Cell cluster prediction")
-    st.write("The cell cluster is:")    
-
-    if prediction[0] == 0:
-        st.write("<span class='diagnosis benign'>Benign</span>", unsafe_allow_html=True)
-    else:
-        st.write("<span class='diagnosis malicious'>Malicious</span>", unsafe_allow_html=True)
-
-    c1, c2 = st.columns([2, 2])
-    with c1:
-        st.write(
-            f"""
-            <div class="probability-container">
-                <div class="probability-item">
-                    <span class="probability-label" style="height: 40px; display: flex; align-items: center;">Probability of being benign:</span>
-                    <span class="probability-value benign" style="height: 40px; display: flex; align-items: center;">{probabilities[0]:.2%}</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    with c2:
-        st.write(
-            f"""
-            <div class="probability-container">
-                <div class="probability-item">
-                    <span class="probability-label" style="height: 40px; display: flex; align-items: center;">Probability of being malignant:</span>
-                    <span class="probability-value malicious" style="height: 40px; display: flex; align-items: center;">{probabilities[1]:.2%}</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
     st.warning("This app can assist medical professionals in making a diagnosis, but should not be used as a substitute for a professional diagnosis.")
+    return prediction, probabilities
 
 def main():
     st.set_page_config(
@@ -203,7 +188,67 @@ def main():
 
     col1, col2 = st.tabs(['Prediction','Visualisation'])
     with col1:
-       add_predictions(input_data)
+
+        prediction, probabilities = add_predictions(input_data)
+        st.subheader("Cell cluster prediction")
+        st.write("The cell cluster is:")    
+
+        if prediction[0] == 0:
+            st.write("<span class='diagnosis benign'>Benign</span>", unsafe_allow_html=True)
+        else:
+            st.write("<span class='diagnosis malicious'>Malicious</span>", unsafe_allow_html=True)
+
+        c1, c2 = st.columns([2, 2])
+        with c1:
+            st.write(
+                f"""
+                <div class="probability-container">
+                    <div class="probability-item">
+                        <span class="probability-label" style="height: 40px; display: flex; align-items: center;">Probability of being benign:</span>
+                        <span class="probability-value benign" style="height: 40px; display: flex; align-items: center;">{probabilities[0]:.2%}</span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with c2:
+            st.write(
+                f"""
+                <div class="probability-container">
+                    <div class="probability-item">
+                        <span class="probability-label" style="height: 40px; display: flex; align-items: center;">Probability of being malignant:</span>
+                        <span class="probability-value malicious" style="height: 40px; display: flex; align-items: center;">{probabilities[1]:.2%}</span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        data = get_clean_data()
+        if st.button("View Data"):
+            st.table(input_data)
+
+        if st.button("Summarize the Report"):
+            # Generate a summary based on the prediction and input v alues
+            st.subheader("Summary")
+            summary_text = f"""
+            The cell cluster is predicted to be {'benign' if prediction[0] == 0 else 'malignant'} with a probability of {probabilities[0]:.2%} and {probabilities[1]:.2%} respectively.
+
+            Key input features and their impact:
+            - Radius (mean): {input_data['radius_mean']:.2f} - Higher radius values are associated with malignant tumors.
+            - Texture (mean): {input_data['texture_mean']:.2f} - Higher texture values are associated with malignant tumors.
+            - Perimeter (mean): {input_data['perimeter_mean']:.2f} - Higher perimeter values are associated with malignant tumors.
+            - Area (mean): {input_data['area_mean']:.2f} - Higher area values are associated with malignant tumors.
+            - Smoothness (mean): {input_data['smoothness_mean']:.2f} - Higher smoothness values are associated with malignant tumors.
+            - Compactness (mean): {input_data['compactness_mean']:.2f} - Higher compactness values are associated with malignant tumors.
+            - Concavity (mean): {input_data['concavity_mean']:.2f} - Higher concavity values are associated with malignant tumors.
+            - Concave points (mean): {input_data['concave points_mean']:.2f} - Higher concave points values are associated with malignant tumors.
+            - Symmetry (mean): {input_data['symmetry_mean']:.2f} - Lower symmetry values are associated with malignant tumors.
+            - Fractal dimension (mean): {input_data['fractal_dimension_mean']:.2f} - Higher fractal dimension values are associated with malignant tumors.
+            """
+            summary = summarize_text(summary_text, max_tokens=350)
+            st.write(summary)
+
             
     with col2:
         radar_chart = get_radar_chart(input_data)
@@ -219,6 +264,7 @@ def main():
         st.subheader("Feature Distributions by Diagnosis")
         violin_plot = get_violin_plot(data)
         st.plotly_chart(violin_plot)
+
         
 
 if __name__ == '__main__':
