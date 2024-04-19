@@ -7,3 +7,4 @@ streamlit==1.18.1
 altair<5
 matplotlib
 seaborn
+openai
