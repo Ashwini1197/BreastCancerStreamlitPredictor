@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import plotly.express as px
-from streamlit_card import card
 
 def get_clean_data():
     data = pd.read_csv("data/data.csv")
@@ -182,7 +181,7 @@ def add_predictions(input_data):
             """,
             unsafe_allow_html=True
         )
-        
+
     st.warning("This app can assist medical professionals in making a diagnosis, but should not be used as a substitute for a professional diagnosis.")
 
 def main():
